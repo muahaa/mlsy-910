@@ -1,6 +1,6 @@
 /***********************************************************************
  **********************************************************************/
-//Çı¶¯
+//é©±åŠ¨
 #include "LPC23xx.h"
 #include "type.h"
 #include "irq.h"
@@ -11,7 +11,7 @@
 #include "rtc.h"
 #include "can.h"
 #include "uart.h"
-//µçÌİ
+//ç”µæ¢¯
 #include "main.h"
 #define  Lift_Ex
 #include "IO.h"
@@ -53,6 +53,8 @@ DWORD BitFunTwo(DWORD *p, DWORD *p1, DWORD i)
    if(((*p1)&i)>0) { Value |= 0x01; }
    return(Value);
 }
+/**********************************************************************/
+DWORD LiftNoOrderTimer[8]; // per-lift idle timer for distributed waiting
 /**********************************************************************/
 /**********************************************************************/
 void LiftInit(void)
@@ -123,6 +125,7 @@ void LiftInit(void)
       LiftRunFloor[i] = 0;
       LiftEnDecFloor[i] = 0;
 	    LiftWaitTimer[i] = 0;
+      LiftNoOrderTimer[i] = 0;
    }
    LiftWaitFlag = 0;
 
@@ -130,7 +133,7 @@ void LiftInit(void)
    if((GroupMaxFloor<1)||(GroupMaxFloor>64)) { GroupMaxFloor = 8; }
    for(i=0; i<8; i++) {
       for(j=0; j<2; j++) {
-         GroupUpOrder[i][j] = 0;//Èº¿ØµÄºôÌİ±êÖ¾
+         GroupUpOrder[i][j] = 0;//ç¾¤æ§çš„å‘¼æ¢¯æ ‡å¿—
 		     CanUpLed[i][j] = 0; 
 		     GroupDnOrder[i][j] = 0;
 		     CanDnLed[i][j] = 0; 				
@@ -146,20 +149,20 @@ void LiftInit(void)
 	 
    for(i=0; i<8; i++) {
       for(j=0; j<72; j++) {
-				  CanUpLedTimer[i][j] = 0xff;//·¢ËÍ´ÎÊı
-          CanDnLedTimer[i][j] = 0xff;//·¢ËÍ´ÎÊı
+				  CanUpLedTimer[i][j] = 0xff;//å‘é€æ¬¡æ•°
+          CanDnLedTimer[i][j] = 0xff;//å‘é€æ¬¡æ•°
 			}
 	 }
 	 
    for(i=0; i<8; i++) {
       for(j=0; j<2; j++) {
-				  RunEnUpOrder[i][j]  = 0; //8Ì¨ÌİAÃÅºôÌİÊ¹ÄÜÔËĞĞÊ±Ê¹ÓÃ
+				  RunEnUpOrder[i][j]  = 0; //8å°æ¢¯Aé—¨å‘¼æ¢¯ä½¿èƒ½è¿è¡Œæ—¶ä½¿ç”¨
           RunEnDnOrder[i][j]  = 0;
 			}
 	 }
 }
 /**********************************************************************/
-DWORD Bit64Temp[2]; //64Î»ÁÙÊ±±äÁ¿
+DWORD Bit64Temp[2]; //64ä½ä¸´æ—¶å˜é‡
 
 DWORD UpOrderBit(DWORD Lift, DWORD Floor)
 {
@@ -196,7 +199,7 @@ DWORD OrderBit_AB(DWORD Lift, DWORD Floor, DWORD Order)
 }
 
 //-------------------------------
-//OrderUD:1AÉÏ£¬2AÏÂ£¬3BÉÏ£¬4BÏÂ
+//OrderUD:1Aä¸Šï¼Œ2Aä¸‹ï¼Œ3Bä¸Šï¼Œ4Bä¸‹
 void LiftDistance(DWORD Lift, DWORD OrderUD, DWORD OrderFlr)
 {
    DWORD i,j;
@@ -207,16 +210,16 @@ void LiftDistance(DWORD Lift, DWORD OrderUD, DWORD OrderFlr)
    if (SetAddr[Lift]==0) { FNum = 0x1fffffff; FTime = 0x1fffffff; return; }
    if (LiftOnline[Lift]==0) { FNum = 0x1fffffff; FTime = 0x1fffffff; return; }
 	 i = 0;
-	 if (LiftNotMoveTimer[Lift]==0)  { i = 1; } //ÓĞ·½Ïò³¬Ê±²»×ß,¿ªÃÅµ½Î»
-	 if ((LiftState[Lift]&0x0800)>0) { i = 1; } //³¬ÔØ
-   if ((LiftState[Lift]&0x1000)>0) { i = 1; } //ÂúÔØ
+	 if (LiftNotMoveTimer[Lift]==0)  { i = 1; } //æœ‰æ–¹å‘è¶…æ—¶ä¸èµ°,å¼€é—¨åˆ°ä½
+	 if ((LiftState[Lift]&0x0800)>0) { i = 1; } //è¶…è½½
+   if ((LiftState[Lift]&0x1000)>0) { i = 1; } //æ»¡è½½
    if (OrderFlr<FirstFloor[Lift])  { i = 1; }
 	 if (OrderFlr>MaxFloor[Lift])    { i = 1; }
 	 if ((OrderUD == 1)&&(BitFun(RunEnUpOrder[Lift], OrderFlr, 2)==0)) { i = 1; }
 	 if ((OrderUD == 2)&&(BitFun(RunEnDnOrder[Lift], OrderFlr, 2)==0)) { i = 1; }
 	 if (i) { FNum = 0x1fffffff; FTime = 0x1fffffff; return; } 
 	 
-	 //¼ÆËã×î¸ßºÍ×îµÍÂ¥²ã
+	 //è®¡ç®—æœ€é«˜å’Œæœ€ä½æ¥¼å±‚
    Max = LiftNowFloor[Lift];
    Min = Max;
    for(i=LiftNowFloor[Lift]; i<=MaxFloor[Lift]; i++) {
@@ -227,13 +230,13 @@ void LiftDistance(DWORD Lift, DWORD OrderUD, DWORD OrderFlr)
 		  if (DnOrderBit(Lift, i)>0) { Min = FirstFloor[Lift]; break; } 
 			if ((InOrderBit(Lift, i)>0)||(UpOrderBit(Lift, i)>0)) { Min = i; } 
    }
-   if (OrderFlr<Min) { Min = OrderFlr; }//ĞŞÕı×î¶Ì¾àÀë
-   if (OrderFlr>Max) { Max = OrderFlr; }//ĞŞÕı×î´ó¾àÀë
+   if (OrderFlr<Min) { Min = OrderFlr; }//ä¿®æ­£æœ€çŸ­è·ç¦»
+   if (OrderFlr>Max) { Max = OrderFlr; }//ä¿®æ­£æœ€å¤§è·ç¦»
 
-	 //ÉÏºô 
+	 //ä¸Šå‘¼ 
    if (OrderUD == 1) { 
-      if((LiftState[Lift]&0x00c0)==0x80) { //ÉÏĞĞ
-         if(OrderFlr>=LiftNowFloor[Lift]) { //ÉÏĞĞË³Ïò 
+      if((LiftState[Lift]&0x00c0)==0x80) { //ä¸Šè¡Œ
+         if(OrderFlr>=LiftNowFloor[Lift]) { //ä¸Šè¡Œé¡ºå‘ 
 		        FNum = OrderFlr-LiftNowFloor[Lift];
 			      for(i=LiftNowFloor[Lift]; i<OrderFlr; i++) {
 			          j = 0;
@@ -244,7 +247,7 @@ void LiftDistance(DWORD Lift, DWORD OrderUD, DWORD OrderFlr)
 			          } 
 			      } 
 		     }
-         else {//ÉÏĞĞ·´Ïò
+         else {//ä¸Šè¡Œåå‘
 		        FNum = (Max-LiftNowFloor[Lift])+(Max-Min)+(OrderFlr-Min);
 			      for(i=LiftNowFloor[Lift]; i<=Max; i++) {
 			          j = 0;
@@ -266,7 +269,7 @@ void LiftDistance(DWORD Lift, DWORD OrderUD, DWORD OrderFlr)
 			      }
 		    }
 	  }
-	  else if((LiftState[Lift]&0x00c0)==0x40) {//ÏÂĞĞ
+	  else if((LiftState[Lift]&0x00c0)==0x40) {//ä¸‹è¡Œ
 	      FNum = (LiftNowFloor[Lift]-Min)+(OrderFlr-Min);
 		    for(i=LiftNowFloor[Lift]; i>=Min; i--) {
 		        j = 0;
@@ -282,7 +285,7 @@ void LiftDistance(DWORD Lift, DWORD OrderUD, DWORD OrderFlr)
 			      } 
 		    } 
 	  }
-	  else {//ÎŞ·½Ïò
+	  else {//æ— æ–¹å‘
         if(OrderFlr>=LiftNowFloor[Lift]) { 
 		       FNum = OrderFlr-LiftNowFloor[Lift];
 			     for(i=LiftNowFloor[Lift]; i<OrderFlr; i++) {
@@ -313,9 +316,9 @@ void LiftDistance(DWORD Lift, DWORD OrderUD, DWORD OrderFlr)
 	    }
    }
 
-   //ÏÂºô	 
+   //ä¸‹å‘¼	 
    else { 
-      if((LiftState[Lift]&0x00c0)==0x80) {//ÉÏĞĞ
+      if((LiftState[Lift]&0x00c0)==0x80) {//ä¸Šè¡Œ
          FNum = Max-LiftNowFloor[Lift]+(Max-OrderFlr);
 		     for(i=LiftNowFloor[Lift]; i<=Max; i++) {
 		        j = 0;
@@ -331,7 +334,7 @@ void LiftDistance(DWORD Lift, DWORD OrderUD, DWORD OrderFlr)
 			      } 
 		     } 
 	   }
-	   else if((LiftState[Lift]&0x00c0)==0x40) {//ÏÂĞĞ
+	   else if((LiftState[Lift]&0x00c0)==0x40) {//ä¸‹è¡Œ
 	       if(LiftNowFloor[Lift]>=OrderFlr) { 
 		     FNum = LiftNowFloor[Lift]-OrderFlr; 
 		     for(i=LiftNowFloor[Lift]; i>OrderFlr; i--) {
@@ -365,7 +368,7 @@ void LiftDistance(DWORD Lift, DWORD OrderUD, DWORD OrderFlr)
 		     }
 		  }
 	  }
-    else {//ÎŞ·½Ïò
+    else {//æ— æ–¹å‘
        if(LiftNowFloor[Lift]>=OrderFlr) { 
 		      FNum = LiftNowFloor[Lift]-OrderFlr;
 			    for(i=LiftNowFloor[Lift]; i>OrderFlr; i--) {
@@ -396,7 +399,7 @@ void LiftDistance(DWORD Lift, DWORD OrderUD, DWORD OrderFlr)
 	   }
    }
 
-   if (CNum==0) {  //Ö»ÓĞÒ»¸öºôÌİ
+   if (CNum==0) {  //åªæœ‰ä¸€ä¸ªå‘¼æ¢¯
       if(LiftNowFloor[Lift]>=OrderFlr) { FNum = LiftNowFloor[Lift]- OrderFlr; }
 	    else                             { FNum = OrderFlr - LiftNowFloor[Lift]; }
    }
@@ -404,47 +407,47 @@ void LiftDistance(DWORD Lift, DWORD OrderUD, DWORD OrderFlr)
    FTime = FloorRunTime*FNum + CNum*RunStopTime;
    j = RunOrderTime; 	 
    if(OrderUD == 1) {
-			if (OrderBit_AB(Lift, OrderFlr, 1)>0) { j = 0; }//Ö®Ç°Ã»·ÖÅä
+			if (OrderBit_AB(Lift, OrderFlr, 1)>0) { j = 0; }//ä¹‹å‰æ²¡åˆ†é…
 	 }
 	 else if(OrderUD == 2) {
-			if (OrderBit_AB(Lift, OrderFlr, 2)>0) { j = 0; }//Ö®Ç°Ã»·ÖÅä
+			if (OrderBit_AB(Lift, OrderFlr, 2)>0) { j = 0; }//ä¹‹å‰æ²¡åˆ†é…
 	 }
 	 FTime += j;
    
-   if(FNum==0) { //±¾²ã´¦Àí(ÓÃµÍ8Î»)
+   if(FNum==0) { //æœ¬å±‚å¤„ç†(ç”¨ä½8ä½)
 		  j = 0;
       if(OrderUD == 1) {
-				 if((LiftState[Lift]&0x00c0)==0x40) { FNum |= 0x80; } //²»Í¬Ïò
-				 if (OrderBit_AB(Lift, OrderFlr, 1)==0) { FNum |= 0x10; }//Ö®Ç°Ã»·ÖÅä
+				 if((LiftState[Lift]&0x00c0)==0x40) { FNum |= 0x80; } //ä¸åŒå‘
+				 if (OrderBit_AB(Lift, OrderFlr, 1)==0) { FNum |= 0x10; }//ä¹‹å‰æ²¡åˆ†é…
 	    }
 	    else if(OrderUD == 2) {
-				 if((LiftState[Lift]&0x00c0)==0x80) { FNum |= 0x80; } //²»Í¬Ïò
-				 if (OrderBit_AB(Lift, OrderFlr, 2)==0) { FNum |= 0x10; }//Ö®Ç°Ã»·ÖÅä
+				 if((LiftState[Lift]&0x00c0)==0x80) { FNum |= 0x80; } //ä¸åŒå‘
+				 if (OrderBit_AB(Lift, OrderFlr, 2)==0) { FNum |= 0x10; }//ä¹‹å‰æ²¡åˆ†é…
 	    }
 
-      if((LiftState[Lift]&0x0002)==0) { ; }//Í£Ö¹
-	    else if((LiftState[Lift]&0x0020)==0) { FNum |= 0x20; }//±¾²ã¼õËÙ 
+      if((LiftState[Lift]&0x0002)==0) { ; }//åœæ­¢
+	    else if((LiftState[Lift]&0x0020)==0) { FNum |= 0x20; }//æœ¬å±‚å‡é€Ÿ 
 	    else { FNum |= 0x40; } 
 
       i = (LiftState[Lift]&0x0300);
       			
-	    if((i==0x300)||(j>0)) { ; } //¿ªÃÅµ½Î» »òÕß ¸Ã²ãºôÌİ°´Å¥±»°´ÏÂ
-	    else if(i==0x100) { FNum |= 0x01; } //ÕıÔÚ¿ªÃÅ
-	    else if(i==0x000) { FNum |= 0x02; } //¹ØÃÅµ½Î»
-	    else if(i==0x200) { FNum |= 0x04; } //ÕıÔÚ¹ØÃÅ
+	    if((i==0x300)||(j>0)) { ; } //å¼€é—¨åˆ°ä½ æˆ–è€… è¯¥å±‚å‘¼æ¢¯æŒ‰é’®è¢«æŒ‰ä¸‹
+	    else if(i==0x100) { FNum |= 0x01; } //æ­£åœ¨å¼€é—¨
+	    else if(i==0x000) { FNum |= 0x02; } //å…³é—¨åˆ°ä½
+	    else if(i==0x200) { FNum |= 0x04; } //æ­£åœ¨å…³é—¨
    }
-   else {//(ÓÃ¸ß8Î»)
+   else {//(ç”¨é«˜8ä½)
       FNum = (FNum<<16)&(0xffff0000);
       if(OrderUD == 1) {
-				 if (OrderBit_AB(Lift, OrderFlr, 1)==0) { FNum |= 0x0100; }//Ö®Ç°Ã»·ÖÅä
-		     if((LiftNowFloor[Lift]>OrderFlr)||((LiftState[Lift]&0x00c0)!=0x80)) { FNum |= 0x4000; } //Ë³ÏòÓÅÏÈ 
+				 if (OrderBit_AB(Lift, OrderFlr, 1)==0) { FNum |= 0x0100; }//ä¹‹å‰æ²¡åˆ†é…
+		     if((LiftNowFloor[Lift]>OrderFlr)||((LiftState[Lift]&0x00c0)!=0x80)) { FNum |= 0x4000; } //é¡ºå‘ä¼˜å…ˆ 
 	    }
 	    else if(OrderUD == 2) {
-	       if (OrderBit_AB(Lift, OrderFlr, 2)==0) { FNum |= 0x0100; }//Ö®Ç°Ã»·ÖÅä
-		     if((LiftNowFloor[Lift]<OrderFlr)||((LiftState[Lift]&0x00c0)!=0x40)) { FNum |= 0x4000; } //Ë³ÏòÓÅÏÈ 
+	       if (OrderBit_AB(Lift, OrderFlr, 2)==0) { FNum |= 0x0100; }//ä¹‹å‰æ²¡åˆ†é…
+		     if((LiftNowFloor[Lift]<OrderFlr)||((LiftState[Lift]&0x00c0)!=0x40)) { FNum |= 0x4000; } //é¡ºå‘ä¼˜å…ˆ 
 	    }
 			
-			if ((INum==1)||(ONum>0)||(InOrderBit(Lift, OrderFlr)==0)) { FNum |= 0x2000; } //Ö»ÓĞÒ»¸öµ½´ï¸Ã²ãµÄÄÚÑ¡
+			if ((INum==1)||(ONum>0)||(InOrderBit(Lift, OrderFlr)==0)) { FNum |= 0x2000; } //åªæœ‰ä¸€ä¸ªåˆ°è¾¾è¯¥å±‚çš„å†…é€‰
    }
 }
 /*****************************************************************************************************
@@ -453,7 +456,7 @@ DWORD Sq_PL[8];
 void Seqence(void)
 {
    DWORD i,j,M;
-   for(i=0; i<8; i++) {//ÓĞ·½ÏòµÄ¾àÀë
+   for(i=0; i<8; i++) {//æœ‰æ–¹å‘çš„è·ç¦»
 	    Sq_PL[i] = L[i];
    }
    for(i=0; i<8; i++) {
@@ -467,7 +470,7 @@ void Seqence(void)
 /*****************************************************************************************************
 *****************************************************************************************************/
 DWORD LiftOrderCounter[8];
-void CounterLiftOrder(void)//¼ÆËãµçÌİµÇ¼ÇÊı
+void CounterLiftOrder(void)//è®¡ç®—ç”µæ¢¯ç™»è®°æ•°
 {
    DWORD i,k,num;
 	 for (i=0; i<8; i++) {
@@ -482,7 +485,7 @@ void CounterLiftOrder(void)//¼ÆËãµçÌİµÇ¼ÇÊı
 }
 
 
-//10ms¶¨Ê±
+//10mså®šæ—¶
 DWORD GP;
 void LiftMain( void )
 {
@@ -490,7 +493,7 @@ void LiftMain( void )
 	
 	 CounterLiftOrder();
 	
-	//¼ÆËãËùÓĞÔÊĞíµÄµÇ¼Ç
+	//è®¡ç®—æ‰€æœ‰å…è®¸çš„ç™»è®°
    j=0; k=0; m=0; n=0;
    for (GP=0; GP<8; GP++) {
       if ((LiftOnline[GP]>0)&&(SetAddr[GP]>0)) {
@@ -501,7 +504,7 @@ void LiftMain( void )
 	    }
    }
 	 
-	 //ÆÁ±ÎÈº¿ØÖĞ²»ÔÊĞíµÄºôÌİ 
+	 //å±è”½ç¾¤æ§ä¸­ä¸å…è®¸çš„å‘¼æ¢¯ 
    for (GP=0; GP<8; GP++) {
       GroupUpOrder[GP][0] &= j;
       GroupUpOrder[GP][1] &= k;
@@ -509,7 +512,7 @@ void LiftMain( void )
       GroupDnOrder[GP][1] &= n;  
    }
 	 //---------------------------------------
-   //¼ÆËãÄÚÑ¡ÊıÄ¿
+   //è®¡ç®—å†…é€‰æ•°ç›®
    for(j=0; j<8; j++) { 
       m = 0;
       for (k=FirstFloor[j]; k<MaxFloor[j]; k++) {
@@ -518,23 +521,23 @@ void LiftMain( void )
       IncallNum[j] = m;
    }
 
-	 //ÏÂÒ»Â¥²ã
+	 //ä¸‹ä¸€æ¥¼å±‚
    Do_Floor++;
    if(Do_Floor>GroupMaxFloor) { Do_Floor = GroupFirstFloor; }
 	 
 	 //-----------------------------------------------------------------------------------------------
-   //ÉÏºô´¦Àí
+   //ä¸Šå‘¼å¤„ç†
    k = 0; 
-   for(GP=0; GP<8; GP++) {  //8×éÑ­»·
-      if (BitFun(GroupUpOrder[GP], Do_Floor, 2)>0) { //Ä³×éÖĞµÄµÇ¼Ç
-				 //¼ÆËã¸Ã×é¸÷Ì¨ÌİµÄ¾àÀëÇé¿ö
+   for(GP=0; GP<8; GP++) {  //8ç»„å¾ªç¯
+      if (BitFun(GroupUpOrder[GP], Do_Floor, 2)>0) { //æŸç»„ä¸­çš„ç™»è®°
+				 //è®¡ç®—è¯¥ç»„å„å°æ¢¯çš„è·ç¦»æƒ…å†µ
 	       for (j=0; j<8; j++) {
 		        LiftDistance(j, 1, Do_Floor); 
 		        COut[j] = ONum;
 		        CIn[j] = INum;
 		        C[j] = CNum;
-			      if (BitFun(EnUpGroup[GP][j], Do_Floor, 2)==0) { L[j] = 0x1fffffff; } //±¾Ìİ²»²ÎÓë±¾×éÈº¿Ø
-		        else if (C[j]>2) { L[j] = 0x1fffffff; } //µÇ¼ÇºÅ´óÓÚ3,²»½ÓÊÕµÇ¼Ç
+			      if (BitFun(EnUpGroup[GP][j], Do_Floor, 2)==0) { L[j] = 0x1fffffff; } //æœ¬æ¢¯ä¸å‚ä¸æœ¬ç»„ç¾¤æ§
+		        else if (C[j]>2) { L[j] = 0x1fffffff; } //ç™»è®°å·å¤§äº3,ä¸æ¥æ”¶ç™»è®°
 		        else { L[j] = FNum; }
 						T[j] = FTime;
          }
@@ -542,54 +545,54 @@ void LiftMain( void )
 	       Seqence();
 
          m = N[0];
-	       if (L[m]!=0x1fffffff) { //ÓĞÌİ¿ÉÓÃ
-	          if (((LiftState[m]&0x00c0)==0x80)&&(LiftNowFloor[m]>Do_Floor)) { //Í¬·½Ïò,×ß¹ıÍ·
+	       if (L[m]!=0x1fffffff) { //æœ‰æ¢¯å¯ç”¨
+	          if (((LiftState[m]&0x00c0)==0x80)&&(LiftNowFloor[m]>Do_Floor)) { //åŒæ–¹å‘,èµ°è¿‡å¤´
 	             for(j=1; j<8; j++) {
-		              n = N[j];//´Î¼¶¾àÀëÌİºÅ
-		              if (L[n]==0x1fffffff) { break; } //´Î¼¶²»¿ÉÓÃ				  
-		              if ((C[n]==0)&&(C[m]>0)&&((LiftFuntion&RunNoOrder)>0)&&(LiftOrderCounter[n]<=1)) { m = n; break; } //ÎŞµÇ¼Ç
-									if ((C[n]==0)&&(T[m]>=T[n])&&((LiftFuntion&RunNoOrderTimeCtrl)>0)) { m = n; break; } //ÎŞµÇ¼Ç
+		              n = N[j];//æ¬¡çº§è·ç¦»æ¢¯å·
+		              if (L[n]==0x1fffffff) { break; } //æ¬¡çº§ä¸å¯ç”¨				  
+		              if ((C[n]==0)&&(C[m]>0)&&((LiftFuntion&RunNoOrder)>0)&&(LiftOrderCounter[n]<=1)) { m = n; break; } //æ— ç™»è®°
+									if ((C[n]==0)&&(T[m]>=T[n])&&((LiftFuntion&RunNoOrderTimeCtrl)>0)) { m = n; break; } //æ— ç™»è®°
 				          if ((LiftNowFloor[n]>=Do_Floor)&&((LiftState[n]&0x00c0)==0x40)&&((LiftFuntion&RunOneInOrder)>0)) { 
 			            if ((CIn[n]==1)&&(COut[n]==0)&&(BitFun(LiftInOrder[n], Do_Floor, 2)>0)
-										&&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //Ö»ÓĞÒ»¸öµ½´ï¸Ã²ãµÄÄÚÑ¡
+										&&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //åªæœ‰ä¸€ä¸ªåˆ°è¾¾è¯¥å±‚çš„å†…é€‰
 			            }
 			            if ((LiftNowFloor[n]<=Do_Floor)&&((LiftState[n]&0x00c0)==0x80)&&((LiftFuntion&RunOneInOrder)>0)) {
 			            if ((CIn[n]==1)&&(COut[n]==0)&&(BitFun(LiftInOrder[n], Do_Floor, 2)>0)
-										&&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //Ö»ÓĞÒ»¸öµ½´ï¸Ã²ãµÄÄÚÑ¡
+										&&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //åªæœ‰ä¸€ä¸ªåˆ°è¾¾è¯¥å±‚çš„å†…é€‰
 			            }
 		           } 
             }
-	          else if ((LiftState[m]&0x00c0)==0x40) {//Ê×Ñ¡Ìİ·´Ïò
+	          else if ((LiftState[m]&0x00c0)==0x40) {//é¦–é€‰æ¢¯åå‘
                if ((LiftNowFloor[m]>=Do_Floor)&&(CIn[m]==1)&&(COut[m]==0)
-                 &&(BitFun(LiftInOrder[m], Do_Floor, 2)>0))  { ; } //Ö»ÓĞÒ»¸öµ½´ï¸Ã²ãµÄÄÚÑ¡
-		           else if (Do_Floor==FirstFloor[m])  { ; } //Îª±¾Ìİ×îµÍÂ¥²ã
-		           else if ((C[m]>0)||((LiftNowFloor[m]==Do_Floor)&&((LiftState[m]&0x0002)==0))) { //ÓĞ±ğµÄµÇ¼Ç,±¾²ãÍ£Ö¹
+                 &&(BitFun(LiftInOrder[m], Do_Floor, 2)>0))  { ; } //åªæœ‰ä¸€ä¸ªåˆ°è¾¾è¯¥å±‚çš„å†…é€‰
+		           else if (Do_Floor==FirstFloor[m])  { ; } //ä¸ºæœ¬æ¢¯æœ€ä½æ¥¼å±‚
+		           else if ((C[m]>0)||((LiftNowFloor[m]==Do_Floor)&&((LiftState[m]&0x0002)==0))) { //æœ‰åˆ«çš„ç™»è®°,æœ¬å±‚åœæ­¢
                   for(j=1; j<8; j++) {
-		                 n = N[j];//´Î¼¶¾àÀëÌİºÅ
-			               if (L[n]==0x1fffffff) { break; } //´Î¼¶²»¿ÉÓÃ
-					           if ((C[n]==0)&&(C[m]>0)&&((LiftFuntion&RunNoOrder)>0)) { m = n; break; } //ÎŞµÇ¼Ç
-										 if ((C[n]==0)&&(T[m]>=T[n])&&((LiftFuntion&RunNoOrderTimeCtrl)>0)) { m = n; break; } //ÎŞµÇ¼Ç
+		                 n = N[j];//æ¬¡çº§è·ç¦»æ¢¯å·
+			               if (L[n]==0x1fffffff) { break; } //æ¬¡çº§ä¸å¯ç”¨
+					           if ((C[n]==0)&&(C[m]>0)&&((LiftFuntion&RunNoOrder)>0)) { m = n; break; } //æ— ç™»è®°
+										 if ((C[n]==0)&&(T[m]>=T[n])&&((LiftFuntion&RunNoOrderTimeCtrl)>0)) { m = n; break; } //æ— ç™»è®°
 			               if ((LiftNowFloor[n]>=Do_Floor)&&((LiftState[n]&0x00c0)==0x40)&&((LiftFuntion&RunOneInOrder)>0)) { 
 			               if ((CIn[n]==1)&&(COut[n]==0)&&(BitFun(LiftInOrder[n], Do_Floor, 2)>0)
-											 &&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //Ö»ÓĞÒ»¸öµ½´ï¸Ã²ãµÄÄÚÑ¡
+											 &&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //åªæœ‰ä¸€ä¸ªåˆ°è¾¾è¯¥å±‚çš„å†…é€‰
 			               }
 			               if ((LiftNowFloor[n]<=Do_Floor)&&((LiftState[n]&0x00c0)==0x80)&&((LiftFuntion&RunOneInOrder)>0)) {
 			               if ((CIn[n]==1)&&(COut[n]==0)&&(BitFun(LiftInOrder[n], Do_Floor, 2)>0)
-											 &&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //Ö»ÓĞÒ»¸öµ½´ï¸Ã²ãµÄÄÚÑ¡
+											 &&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //åªæœ‰ä¸€ä¸ªåˆ°è¾¾è¯¥å±‚çš„å†…é€‰
 			               }
 			            } 
 		           }
             }
 						
 	          BitFun(DoUpOrder[m], Do_Floor, 1);
-		        k |= ((DWORD)1<<m); //±ê¼ÇÄ³Ì¨µçÌİµÇ¼ÇÁË£¬ÓÃÓÚÑ­»·½áÊøºó´¦Àí
+		        k |= ((DWORD)1<<m); //æ ‡è®°æŸå°ç”µæ¢¯ç™»è®°äº†ï¼Œç”¨äºå¾ªç¯ç»“æŸåå¤„ç†
          }
 	    }
    }
 	 
-   for(j=0; j<8; j++) {//8Ì¨µçÌİ
-	    if ((k&((DWORD)1<<j))==0) { //ÅĞ¶ÏµçÌİÊÇ·ñÎŞµÇ¼Ç
-	       if ((LiftNotMoveTimer[j]==0)&&(LiftOnline[j]>0)) { ; }//ÔÚÈº¿Ø×´Ì¬ÏÂ×èÈûÊ±²»Ïû¸ÄµçÌİÍâºô
+   for(j=0; j<8; j++) {//8å°ç”µæ¢¯
+	    if ((k&((DWORD)1<<j))==0) { //åˆ¤æ–­ç”µæ¢¯æ˜¯å¦æ— ç™»è®°
+	       if ((LiftNotMoveTimer[j]==0)&&(LiftOnline[j]>0)) { ; }//åœ¨ç¾¤æ§çŠ¶æ€ä¸‹é˜»å¡æ—¶ä¸æ¶ˆæ”¹ç”µæ¢¯å¤–å‘¼
 		     else { BitFun(DoUpOrder[j], Do_Floor, 0); } 
 	    }
    }
@@ -599,13 +602,13 @@ void LiftMain( void )
       if ( BitFun(DoUpOrder[j], Do_Floor, 2) == BitFun(DoUpOrderOld[j], Do_Floor, 2) ) {
 	       if (BitFun(DoUpOrder[j], Do_Floor, 2)>0) { 
 		        BitFun(UpOrder[j], Do_Floor, 1); 
-		        if (BitFun(LiftUpOrder[j], Do_Floor, 2)==0) { k = 1; } //Ã»µÇ¼Ç,ÆäËü²»ÄÜÏûºÅ
+		        if (BitFun(LiftUpOrder[j], Do_Floor, 2)==0) { k = 1; } //æ²¡ç™»è®°,å…¶å®ƒä¸èƒ½æ¶ˆå·
 		     }
 	    }
 	    else { k = 1; }
    }
 
-   if (k==0) {//ÔÊĞíÆäËûÏûºÅ
+   if (k==0) {//å…è®¸å…¶ä»–æ¶ˆå·
       for(j=0; j<8; j++) {
          if (BitFun(DoUpOrder[j], Do_Floor, 2)==0) { 
 		        BitFun(UpOrder[j], Do_Floor, 0); 
@@ -613,12 +616,12 @@ void LiftMain( void )
 	    }
    }
 
-   for(j=0; j<8; j++) {//±£È«
+   for(j=0; j<8; j++) {//ä¿å…¨
       if (BitFun(DoUpOrder[j], Do_Floor, 2)==0)	{ BitFun(DoUpOrderOld[j], Do_Floor, 0); }
 	    else                                      { BitFun(DoUpOrderOld[j], Do_Floor, 1); }
    }
 
-   //ÏÂºô´¦Àí
+   //ä¸‹å‘¼å¤„ç†
    k = 0; 
    for(GP=0; GP<8; GP++) {
       if (BitFun(GroupDnOrder[GP], Do_Floor, 2)>0) {
@@ -627,8 +630,8 @@ void LiftMain( void )
 		        COut[j] = ONum;
 		        CIn[j] = INum;
 		        C[j] = CNum;
-			      if (BitFun(EnDnGroup[GP][j], Do_Floor, 2)==0) { L[j] = 0x1fffffff; } //±¾Ìİ²»²ÎÓë±¾×éÈº¿Ø
-		        else if (C[j]>2) { L[j] = 0x1fffffff; }//µÇ¼ÇºÅ´óÓÚ3,²»½ÓÊÕµÇ¼Ç
+			      if (BitFun(EnDnGroup[GP][j], Do_Floor, 2)==0) { L[j] = 0x1fffffff; } //æœ¬æ¢¯ä¸å‚ä¸æœ¬ç»„ç¾¤æ§
+		        else if (C[j]>2) { L[j] = 0x1fffffff; }//ç™»è®°å·å¤§äº3,ä¸æ¥æ”¶ç™»è®°
 			      else { L[j] = FNum; }
 						T[j] = FTime;
 				 }
@@ -636,40 +639,40 @@ void LiftMain( void )
 	          Seqence();
 	          m = N[0];
 						
-	          if (L[m]!=0x1fffffff) { //ÓĞÌİ¿ÉÓÃ
-		           if (((LiftState[m]&0x00c0)==0x40)&&(LiftNowFloor[m]<Do_Floor)) { //Í¬·½Ïò,×ß¹ıÍ·
+	          if (L[m]!=0x1fffffff) { //æœ‰æ¢¯å¯ç”¨
+		           if (((LiftState[m]&0x00c0)==0x40)&&(LiftNowFloor[m]<Do_Floor)) { //åŒæ–¹å‘,èµ°è¿‡å¤´
 		              for(j=1; j<8; j++) {
-		                 n = N[j];//´Î¼¶¾àÀëÌİºÅ
-		                 if (L[n]==0x1fffffff) { break; } //´Î¼¶²»¿ÉÓÃ
-		                 if ((C[n]==0)&&(C[m]>0)&&((LiftFuntion&RunNoOrder)>0)&&(LiftOrderCounter[n]<=1)) { m = n; break; } //ÎŞµÇ¼Ç
-										 if ((C[n]==0)&&(T[m]>=T[n])&&((LiftFuntion&RunNoOrderTimeCtrl)>0)) { m = n; break; } //ÎŞµÇ¼Ç
+		                 n = N[j];//æ¬¡çº§è·ç¦»æ¢¯å·
+		                 if (L[n]==0x1fffffff) { break; } //æ¬¡çº§ä¸å¯ç”¨
+		                 if ((C[n]==0)&&(C[m]>0)&&((LiftFuntion&RunNoOrder)>0)&&(LiftOrderCounter[n]<=1)) { m = n; break; } //æ— ç™»è®°
+										 if ((C[n]==0)&&(T[m]>=T[n])&&((LiftFuntion&RunNoOrderTimeCtrl)>0)) { m = n; break; } //æ— ç™»è®°
 			               if ((LiftNowFloor[n]>=Do_Floor)&&((LiftState[n]&0x00c0)==0x40)&&((LiftFuntion&RunOneInOrder)>0)) { 
 			               if ((CIn[n]==1)&&(COut[n]==0)&&(BitFun(LiftInOrder[n], Do_Floor, 2)>0)
-											 &&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //Ö»ÓĞÒ»¸öµ½´ï¸Ã²ãµÄÄÚÑ¡
+											 &&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //åªæœ‰ä¸€ä¸ªåˆ°è¾¾è¯¥å±‚çš„å†…é€‰
 			               }
 			               if ((LiftNowFloor[n]<=Do_Floor)&&((LiftState[n]&0x00c0)==0x80)&&((LiftFuntion&RunOneInOrder)>0)) {
 			               if ((CIn[n]==1)&&(COut[n]==0)&&(BitFun(LiftInOrder[n], Do_Floor, 2)>0)
-											 &&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //Ö»ÓĞÒ»¸öµ½´ï¸Ã²ãµÄÄÚÑ¡
+											 &&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //åªæœ‰ä¸€ä¸ªåˆ°è¾¾è¯¥å±‚çš„å†…é€‰
 			               }
 		              }
                }
-	             else if ((LiftState[m]&0x00c0)==0x80) {//Ê×Ñ¡Ìİ·´Ïò
+	             else if ((LiftState[m]&0x00c0)==0x80) {//é¦–é€‰æ¢¯åå‘
                   if ((LiftNowFloor[m]<=Do_Floor)&&(CIn[m]==1)&&(COut[m]==0)
-                    &&(BitFun(LiftInOrder[m], Do_Floor, 2)>0))  { ; } //Ö»ÓĞÒ»¸öµ½´ï¸Ã²ãµÄÄÚÑ¡
-                  else if (Do_Floor==FirstFloor[m])  { ; } //Îª±¾Ìİ×îµÍÂ¥²ã
-		              else if ((C[m]>0)||((LiftNowFloor[m]==Do_Floor)&&((LiftState[m]&0x0002)==0))) { //ÓĞ±ğµÄµÇ¼Ç,±¾²ãÍ£Ö¹
+                    &&(BitFun(LiftInOrder[m], Do_Floor, 2)>0))  { ; } //åªæœ‰ä¸€ä¸ªåˆ°è¾¾è¯¥å±‚çš„å†…é€‰
+                  else if (Do_Floor==FirstFloor[m])  { ; } //ä¸ºæœ¬æ¢¯æœ€ä½æ¥¼å±‚
+		              else if ((C[m]>0)||((LiftNowFloor[m]==Do_Floor)&&((LiftState[m]&0x0002)==0))) { //æœ‰åˆ«çš„ç™»è®°,æœ¬å±‚åœæ­¢
                      for(j=1; j<8; j++) {
-		                    n = N[j];//´Î¼¶¾àÀëÌİºÅ
-			                  if (L[n]==0x1fffffff) { break; } //´Î¼¶²»¿ÉÓÃ
-			                  if ((C[n]==0)&&(C[m]>0)&&((LiftFuntion&RunNoOrder)>0)) { m = n; break; } //ÎŞµÇ¼Ç
-										    if ((C[n]==0)&&(T[m]>=T[n])&&((LiftFuntion&RunNoOrderTimeCtrl)>0)) { m = n; break; } //ÎŞµÇ¼Ç
+		                    n = N[j];//æ¬¡çº§è·ç¦»æ¢¯å·
+			                  if (L[n]==0x1fffffff) { break; } //æ¬¡çº§ä¸å¯ç”¨
+			                  if ((C[n]==0)&&(C[m]>0)&&((LiftFuntion&RunNoOrder)>0)) { m = n; break; } //æ— ç™»è®°
+										    if ((C[n]==0)&&(T[m]>=T[n])&&((LiftFuntion&RunNoOrderTimeCtrl)>0)) { m = n; break; } //æ— ç™»è®°
 			                  if ((LiftNowFloor[n]>=Do_Floor)&&((LiftState[n]&0x00c0)==0x40)&&((LiftFuntion&RunOneInOrder)>0)) { 
 			                  if ((CIn[n]==1)&&(COut[n]==0)&&(BitFun(LiftInOrder[n], Do_Floor, 2)>0)
-													&&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //Ö»ÓĞÒ»¸öµ½´ï¸Ã²ãµÄÄÚÑ¡
+													&&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //åªæœ‰ä¸€ä¸ªåˆ°è¾¾è¯¥å±‚çš„å†…é€‰
 			               }
 			               if ((LiftNowFloor[n]<=Do_Floor)&&((LiftState[n]&0x00c0)==0x80)&&((LiftFuntion&RunOneInOrder)>0)) {
 			               if ((CIn[n]==1)&&(COut[n]==0)&&(BitFun(LiftInOrder[n], Do_Floor, 2)>0)
-											 &&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //Ö»ÓĞÒ»¸öµ½´ï¸Ã²ãµÄÄÚÑ¡
+											 &&((LiftState[n]&0x0300)==0x0300)&&(L[m]>3)&&(LiftRunFloor[m]!=Do_Floor))  { m = n; break; } //åªæœ‰ä¸€ä¸ªåˆ°è¾¾è¯¥å±‚çš„å†…é€‰
 			               }
 		 	            } 
 		           }
@@ -682,7 +685,7 @@ void LiftMain( void )
    }
    for(j=0; j<8; j++) {
 	    if ((k&((DWORD)1<<j))==0) {
-	        if ((LiftNotMoveTimer[j]==0)&&(LiftOnline[j]>0)) { ; }//ÔÚÈº¿Ø×´Ì¬ÏÂ×èÈûÊ±²»Ïû¸ÄµçÌİÍâºô
+	        if ((LiftNotMoveTimer[j]==0)&&(LiftOnline[j]>0)) { ; }//åœ¨ç¾¤æ§çŠ¶æ€ä¸‹é˜»å¡æ—¶ä¸æ¶ˆæ”¹ç”µæ¢¯å¤–å‘¼
 		      else { BitFun(DoDnOrder[j], Do_Floor, 0); } 
 	    }
    }
@@ -692,13 +695,13 @@ void LiftMain( void )
       if ( BitFun(DoDnOrder[j], Do_Floor, 2) == BitFun(DoDnOrderOld[j], Do_Floor, 2) ) {
 	       if (BitFun(DoDnOrder[j], Do_Floor, 2)>0) { 
 		        BitFun(DnOrder[j], Do_Floor, 1); 
-		        if (BitFun(LiftDnOrder[j], Do_Floor, 2)==0) { k = 1; } //Ã»µÇ¼Ç,ÆäËü²»ÄÜÏûºÅ
+		        if (BitFun(LiftDnOrder[j], Do_Floor, 2)==0) { k = 1; } //æ²¡ç™»è®°,å…¶å®ƒä¸èƒ½æ¶ˆå·
 		     }
 	    }
 	    else { k = 1; }
    }
 
-   if (k==0) {//ÔÊĞíÆäËûÏûºÅ
+   if (k==0) {//å…è®¸å…¶ä»–æ¶ˆå·
       for(j=0; j<8; j++) {
          if (BitFun(DoDnOrder[j], Do_Floor, 2)==0) { 
 		        BitFun(DnOrder[j], Do_Floor, 0); 
@@ -706,7 +709,7 @@ void LiftMain( void )
 	    }
    }
 
-   for(j=0; j<8; j++) {//±£È«
+   for(j=0; j<8; j++) {//ä¿å…¨
       if (BitFun(DoDnOrder[j], Do_Floor, 2)==0)	{ BitFun(DoDnOrderOld[j], Do_Floor, 0); }
 	    else                                      { BitFun(DoDnOrderOld[j], Do_Floor, 1); }
    }	 
@@ -715,7 +718,7 @@ void LiftMain( void )
 *****************************************************************************************************/
 void LiftCancelWait(DWORD wf, DWORD n)
 {
-   if ((LiftWaitFlag&((DWORD)1<<wf))>0) { //µ½´ïºòÌİÂ¥²ã,²¢ÇÒ·¢¹ıÄÚÑ¡
+   if ((LiftWaitFlag&((DWORD)1<<wf))>0) { //åˆ°è¾¾å€™æ¢¯æ¥¼å±‚,å¹¶ä¸”å‘è¿‡å†…é€‰
 		  LiftWaitFlag &= ~((DWORD)1<<wf);
 		  if ((LiftFuntion & BackNotDelInOrder)==0) {
           if(wf<4) { 
@@ -738,23 +741,23 @@ void LiftWait(DWORD n)
 	    if ((UpOrder[i][0]>0)||(UpOrder[i][1]>0)||
 	        (DnOrder[i][0]>0)||(DnOrder[i][1]>0)||
 	        (w[0]>0)||(w[1]>0)
-		     ) {//ÓĞÆäËûºôÌİ 
+		     ) {//æœ‰å…¶ä»–å‘¼æ¢¯ 
 		     LiftCancelWait(i, n);
 		     LiftWaitTimer[i] = 0; 
 	    }	
 
-	    if (LiftOnline[i]==0) { LiftWaitTimer[i] = 0; continue; } //ÍËÀëÈº¿Ø
-      if (LiftNowFloor[i]==WaitFloor[i][n]) { //µ½´ïºòÌİÂ¥²ã
+	    if (LiftOnline[i]==0) { LiftWaitTimer[i] = 0; continue; } //é€€ç¦»ç¾¤æ§
+      if (LiftNowFloor[i]==WaitFloor[i][n]) { //åˆ°è¾¾å€™æ¢¯æ¥¼å±‚
 	       LiftCancelWait(i, n);
 	       LiftWaitTimer[i] = 0; 
 		     continue; 
 	    }  
-	    if ((LiftState[i]&0x00c0)>0) { LiftWaitTimer[i] = 0; continue; } //µçÌİÓĞ·½Ïò
-	    if (WaitFloor[i][n]==0) { LiftWaitTimer[i] = 0; continue; } //´Ë²ÎÊıÎŞĞ§ 
-	    if ((WaitFloor[i][n]<FirstFloor[i])||(WaitFloor[i][n]>MaxFloor[i])) { LiftWaitTimer[i] = 0; continue; } //³¬³ö·¶Î§ 
+	    if ((LiftState[i]&0x00c0)>0) { LiftWaitTimer[i] = 0; continue; } //ç”µæ¢¯æœ‰æ–¹å‘
+	    if (WaitFloor[i][n]==0) { LiftWaitTimer[i] = 0; continue; } //æ­¤å‚æ•°æ— æ•ˆ 
+	    if ((WaitFloor[i][n]<FirstFloor[i])||(WaitFloor[i][n]>MaxFloor[i])) { LiftWaitTimer[i] = 0; continue; } //è¶…å‡ºèŒƒå›´ 
 			
-      if (LiftWaitTimer[i]<WaitFloorTime[n]) { LiftWaitTimer[i]++; continue; }//ºôÄÚÑ¡
-	    else {//Ìõ¼ş²»±äÊ±,Ã¿5ÃëÖØ·¢
+      if (LiftWaitTimer[i]<WaitFloorTime[n]) { LiftWaitTimer[i]++; continue; }//å‘¼å†…é€‰
+	    else {//æ¡ä»¶ä¸å˜æ—¶,æ¯5ç§’é‡å‘
 	       if (i<4) { 
 		        if (CanTxOrder(1, i, WaitFloor[i][n], 0x10, 1)==TRUE) { LiftWaitFlag |= ((DWORD)1<<i); }  
 		     }
@@ -774,12 +777,12 @@ void LiftWait(DWORD n)
 void WaitTimeControl(void) {
    DWORD i,j;
    for(i=0; i<6; i++) {
-      if (WaitStartTime[i] == WaitEndTime[i]) { //ÎŞÉèÖÃµÄÊ±¼ä¶Î
+      if (WaitStartTime[i] == WaitEndTime[i]) { //æ— è®¾ç½®çš„æ—¶é—´æ®µ
 				 break;
 			}
       j = (T_HOUR<<16)|(T_MIN<<8)|T_SEC; 
       if ( ( (WaitStartTime[i] <  WaitEndTime[i])&&((j>WaitStartTime[i])&&(j<WaitEndTime[i])) ) 
-        || ( (WaitStartTime[i] >  WaitEndTime[i])&&((j>WaitStartTime[i])||(j<WaitEndTime[i])) ) ) //ÔÚ¸ß·åÊ±¼ä
+        || ( (WaitStartTime[i] >  WaitEndTime[i])&&((j>WaitStartTime[i])||(j<WaitEndTime[i])) ) ) //åœ¨é«˜å³°æ—¶é—´
 	    { 
 			   LiftWait(i); 
 			   BaseFloorGroup = i;  
@@ -787,12 +790,12 @@ void WaitTimeControl(void) {
 			}
    }
 	 
-	 if (LiftFuntion&BackMode1) { CheckNoOrder(); BaseFloorGroup = 6; } //µ±Ç°Ê±¼ä²»ÔÚÉèÖÃµÄÊ±¼ä¶ÎÄÚ,·ÖÉ¢´ıÌİ
-	 else                       { BaseFloorGroup = 7; } //ÎŞ·ÖÉ¢´ıÌİ
+	 if (LiftFuntion&BackMode1) { CheckNoOrder(); BaseFloorGroup = 6; } //å½“å‰æ—¶é—´ä¸åœ¨è®¾ç½®çš„æ—¶é—´æ®µå†…,åˆ†æ•£å¾…æ¢¯
+	 else                       { BaseFloorGroup = 7; } //æ— åˆ†æ•£å¾…æ¢¯
 }
 /*****************************************************************************************************
 *****************************************************************************************************/
-void LiftLong(DWORD Lift, DWORD OrderFlr)//¼ÆËã¾àÀë
+void LiftLong(DWORD Lift, DWORD OrderFlr)//è®¡ç®—è·ç¦»
 {
    if((SetAddr[Lift]==0)||
       (LiftOnline[Lift]==0)||
@@ -839,7 +842,7 @@ DWORD SearchLift(DWORD *En, DWORD floor)
 	    else { L[i] = 0x1fffffff; }
    } 
    Seqence2();
-   i = N[0];//×î½üµçÌİ
+   i = N[0];//æœ€è¿‘ç”µæ¢¯
    if((LiftNowFloor[i] != floor)&&(L[i] != 0x1fffffff))	{
       BackFloor[i] = floor;
       if(i<4) { 
@@ -852,9 +855,9 @@ DWORD SearchLift(DWORD *En, DWORD floor)
 	    return(1);
    }
    else {
-      LiftWaitFlag &= ~((DWORD)1<<i);//È¡Ïû
+      LiftWaitFlag &= ~((DWORD)1<<i);//å–æ¶ˆ
 	    (*En)	&= ~(1<<i);
-	    return(0);//ÒÑ¾­µ½´ï
+	    return(0);//å·²ç»åˆ°è¾¾
    }
 }
 
@@ -863,9 +866,9 @@ void WaitLiftSend(void) {
    j = 0;	
    k = 0;
    for(i=0; i<8; i++) {
-   	  if(LiftOnline[i]>0) { j++; k |= (1<<i); } //¼ÆËãÔÚÏßµçÌİÌ¨Êı
+   	  if(LiftOnline[i]>0) { j++; k |= (1<<i); } //è®¡ç®—åœ¨çº¿ç”µæ¢¯å°æ•°
    }
-	 if (LiftFuntion&WaitData)	{ j = 8; } //Ö»ÓÃµÚ8×éÊı¾İ
+	 if (LiftFuntion&WaitData)	{ j = 8; } //åªç”¨ç¬¬8ç»„æ•°æ®
    switch (j)
    {
    	case 2:
@@ -925,7 +928,7 @@ void WaitLiftSend(void) {
 
 void LiftCancelCall(DWORD n, DWORD f)
 {
-   if((LiftWaitFlag&((DWORD)1<<n))>0) { //µ½´ïºòÌİÂ¥²ã,²¢ÇÒ·¢¹ıÄÚÑ¡
+   if((LiftWaitFlag&((DWORD)1<<n))>0) { //åˆ°è¾¾å€™æ¢¯æ¥¼å±‚,å¹¶ä¸”å‘è¿‡å†…é€‰
 		  LiftWaitFlag &= ~((DWORD)1<<n);
       if ((LiftFuntion &	BackNotDelInOrder)==0) {	 
            if(n<4) { 
@@ -945,35 +948,187 @@ void CheckNoOrder(void)
    for(i=0; i<8; i++) {
       w[0] = LiftInOrder[i][0];
 	    w[1] = LiftInOrder[i][1];
-	    if ((LiftWaitFlag&((DWORD)1<<i))>0) {//»Ø»ùÕ¾±êÖ¾ 
+	    if ((LiftWaitFlag&((DWORD)1<<i))>0) {//å›åŸºç«™æ ‡å¿— 
          BitFun(w, BackFloor[i], 0);
 	    }																	 
 	    if (LiftOnline[i]==0) { ; }
 	    else if ( (UpOrder[i][0]>0)||(UpOrder[i][1]>0)||
 	              (DnOrder[i][0]>0)||(DnOrder[i][1]>0)||
 	              (w[0]>0)||(w[1]>0) ) 
-			{//ÓĞÆäËûºôÌİ 
+			{//æœ‰å…¶ä»–å‘¼æ¢¯ 
 		     j = 1;
 	    }	
    }
-   if(j==1) {//ÓĞºôÌİ
+
+/*********************************************************************
+ * Distributed waiting mode, per-lift variant.
+ *
+ * Unlike CheckNoOrder(), this path starts an idle timer independently for
+ * every elevator.  Each elevator selects the nearest unreserved configured
+ * waiting floor for the current number of online elevators.
+ *********************************************************************/
+DWORD WaitFloorCount(void)
+{
+   DWORD i, count;
+
+   count = 0;
+   for (i=0; i<8; i++) {
+      if (LiftOnline[i]>0) { count++; }
+   }
+   if (LiftFuntion&WaitData) { count = 8; }
+   return(count);
+}
+
+DWORD WaitFloorByCount(DWORD count, DWORD index)
+{
+   switch (count)
+   {
+      case 2: return(WaitFloor2[index]);
+      case 3: return(WaitFloor3[index]);
+      case 4: return(WaitFloor4[index]);
+      case 5: return(WaitFloor5[index]);
+      case 6: return(WaitFloor6[index]);
+      case 7: return(WaitFloor7[index]);
+      case 8: return(WaitFloor8[index]);
+      default: return(0);
+   }
+}
+
+DWORD LiftIdleForWait(DWORD lift)
+{
+   DWORD order[2];
+
+   if (LiftOnline[lift]==0) { return(0); }
+
+   order[0] = LiftInOrder[lift][0];
+   order[1] = LiftInOrder[lift][1];
+   if (LiftWaitFlag&((DWORD)1<<lift)) {
+      BitFun(order, BackFloor[lift], 0);
+   }
+
+   if ((UpOrder[lift][0]>0)||(UpOrder[lift][1]>0)||
+       (DnOrder[lift][0]>0)||(DnOrder[lift][1]>0)||
+       (order[0]>0)||(order[1]>0)||
+       ((LiftState[lift]&0x00c0)>0)) {
+      return(0);
+   }
+   return(1);
+}
+
+DWORD WaitFloorReserved(DWORD lift, DWORD floor)
+{
+   DWORD i;
+
+   for (i=0; i<8; i++) {
+      if ((i==lift)||(LiftOnline[i]==0)) { continue; }
+      if ((LiftWaitFlag&((DWORD)1<<i))&&(BackFloor[i]==floor)) {
+         return(1);
+      }
+      if ((LiftNowFloor[i]==floor)&&LiftIdleForWait(i)) {
+         return(1);
+      }
+   }
+   return(0);
+}
+
+DWORD FindNearestWaitFloor(DWORD lift, DWORD count)
+{
+   DWORD i, floor, distance, bestFloor, bestDistance, pass;
+
+   bestFloor = 0;
+   for (pass=0; pass<2; pass++) {
+      bestDistance = 0xffffffff;
+      for (i=0; i<count; i++) {
+         floor = WaitFloorByCount(count, i);
+         if ((floor==0)||(floor<FirstFloor[lift])||(floor>MaxFloor[lift])) {
+            continue;
+         }
+         if ((pass==0)&&WaitFloorReserved(lift, floor)) { continue; }
+
+         if (LiftNowFloor[lift]>=floor) { distance = LiftNowFloor[lift]-floor; }
+         else                            { distance = floor-LiftNowFloor[lift]; }
+         if (distance<bestDistance) {
+            bestDistance = distance;
+            bestFloor = floor;
+         }
+      }
+      if (bestFloor>0) { return(bestFloor); }
+   }
+   return(0);
+}
+
+void CheckNoOrderIndividual(void)
+{
+   DWORD i, count, floor, can;
+
+   count = WaitFloorCount();
+   if ((count<2)||(count>8)) {
+      for (i=0; i<8; i++) { LiftNoOrderTimer[i] = 0; }
+      return;
+   }
+
+   for (i=0; i<8; i++) {
+      if (LiftOnline[i]==0) {
+         LiftNoOrderTimer[i] = 0;
+         continue;
+      }
+
+      if ((LiftWaitFlag&((DWORD)1<<i))&&(LiftNowFloor[i]==BackFloor[i])) {
+         LiftWaitFlag &= ~((DWORD)1<<i);
+         LiftNoOrderTimer[i] = 0;
+         continue;
+      }
+
+      if (!LiftIdleForWait(i)) {
+         LiftCancelCall(i, BackFloor[i]);
+         LiftNoOrderTimer[i] = 0;
+         continue;
+      }
+
+      if (LiftWaitFlag&((DWORD)1<<i)) {
+         LiftNoOrderTimer[i] = 0;
+         continue;
+      }
+
+      if (LiftNoOrderTimer[i]<Mode2_WaitFloorTime) {
+         LiftNoOrderTimer[i]++;
+         continue;
+      }
+
+      floor = FindNearestWaitFloor(i, count);
+      if ((floor==0)||(floor==LiftNowFloor[i])) {
+         LiftNoOrderTimer[i] = 0;
+         continue;
+      }
+
+      if (i<4) { can = CanTxOrder(1, i, floor, 0x10, 1); }
+      else     { can = CanTxOrder(2, i, floor, 0x10, 1); }
+      if (can==TRUE) {
+         BackFloor[i] = floor;
+         LiftWaitFlag |= ((DWORD)1<<i);
+         LiftNoOrderTimer[i] = 0;
+      }
+   }
+}
+
+   if(j==1) {//æœ‰å‘¼æ¢¯
       for(i=0; i<8; i++) {
-		     LiftCancelCall(i, BackFloor[i]);//È¡ÏûÄÚÑ¡
+		     LiftCancelCall(i, BackFloor[i]);//å–æ¶ˆå†…é€‰
       }
 	    NoOrderTimer = 0;
-	    StartupTime = Mode2_WaitFloorTime;//ÓĞºôÌİÊ±È¡²Ëµ¥Ê±¼ä 
+	    StartupTime = Mode2_WaitFloorTime;//æœ‰å‘¼æ¢¯æ—¶å–èœå•æ—¶é—´ 
    }
-   else {//ÎŞºôÌİ
+   else {//æ— å‘¼æ¢¯
       j=0;
       for(i=0; i<8; i++) {
 	       if (LiftOnline[i]==0) { ; }
       	 else if((LiftState[i]&0x00c0)>0) { j = 1; } 
       }
-	    if (j==0) {//µçÌİÎŞ·½Ïò
+	    if (j==0) {//ç”µæ¢¯æ— æ–¹å‘
 	       if(NoOrderTimer<StartupTime) { NoOrderTimer++;  }
 		     else { 
 		        WaitLiftSend();
-			      StartupTime = 1;//1Ãë
+			      StartupTime = 1;//1ç§’
 		     }
 	    }
 	    else {
@@ -982,30 +1137,30 @@ void CheckNoOrder(void)
    }	  	
 }
 /*****************************************************************************************************
-30ºÅÖ¡
-×Ö½Ú6 // µçÔ´×´Ì¬¸Ä±ä±¨¸æ±êÖ¾
-		Î»7 : 1 - ±íÊ¾´Ë×Ö½ÚÄÚÈİÓĞĞ§, 0 - ´Ë×Ö½ÚÄÚÈİÎŞĞ§
-		Î»6 : Ôİ²»ÓÃ£¬×ÜÎª0
-		Î»5 : 1 - Í£µç, 0 - ¹©µçÕı³£(»Ö¸´¹©µç)
-		Î»4 - 1 - ·ÇÏû·À, 0 - Ïû·À
-		Î»3 - Ôİ²»ÓÃ£¬×ÜÎª0
-		Î»2 - 1- µçÌİ²»ÔËĞĞ£¬0-µçÌİ¿ÉÔËĞĞ
-		Î»0,1  0-µÈ´ıÖĞ 1-·µ»ØÖĞ 2-ÒÑ·µ»Ø£¬3-ÒÑ·µ»Ø²¢Í¶ÈëÔËĞĞ 
+30å·å¸§
+å­—èŠ‚6 // ç”µæºçŠ¶æ€æ”¹å˜æŠ¥å‘Šæ ‡å¿—
+		ä½7 : 1 - è¡¨ç¤ºæ­¤å­—èŠ‚å†…å®¹æœ‰æ•ˆ, 0 - æ­¤å­—èŠ‚å†…å®¹æ— æ•ˆ
+		ä½6 : æš‚ä¸ç”¨ï¼Œæ€»ä¸º0
+		ä½5 : 1 - åœç”µ, 0 - ä¾›ç”µæ­£å¸¸(æ¢å¤ä¾›ç”µ)
+		ä½4 - 1 - éæ¶ˆé˜², 0 - æ¶ˆé˜²
+		ä½3 - æš‚ä¸ç”¨ï¼Œæ€»ä¸º0
+		ä½2 - 1- ç”µæ¢¯ä¸è¿è¡Œï¼Œ0-ç”µæ¢¯å¯è¿è¡Œ
+		ä½0,1  0-ç­‰å¾…ä¸­ 1-è¿”å›ä¸­ 2-å·²è¿”å›ï¼Œ3-å·²è¿”å›å¹¶æŠ•å…¥è¿è¡Œ 
 
-31ºÅÖ¡
-×Ö½Ú6 // µçÔ´×´Ì¬¸Ä±ä±¨¸æ±êÖ¾
-		Î»7 - 1 - ±íÊ¾´Ë×Ö½ÚÄÚÈİÓĞĞ§, 0 - ´Ë×Ö½ÚÄÚÈİÎŞĞ§
-		Î»6 - Ôİ²»ÓÃ
-		Î»5 - Ôİ²»ÓÃ
-		Î»4 - Ôİ²»ÓÃ
-		Î»2 - Ôİ²»ÓÃ
-		Î»1,0  0-ÎŞÃüÁî 1-·µ»ØÃüÁî 2-ÔËĞĞÃüÁî
+31å·å¸§
+å­—èŠ‚6 // ç”µæºçŠ¶æ€æ”¹å˜æŠ¥å‘Šæ ‡å¿—
+		ä½7 - 1 - è¡¨ç¤ºæ­¤å­—èŠ‚å†…å®¹æœ‰æ•ˆ, 0 - æ­¤å­—èŠ‚å†…å®¹æ— æ•ˆ
+		ä½6 - æš‚ä¸ç”¨
+		ä½5 - æš‚ä¸ç”¨
+		ä½4 - æš‚ä¸ç”¨
+		ä½2 - æš‚ä¸ç”¨
+		ä½1,0  0-æ— å‘½ä»¤ 1-è¿”å›å‘½ä»¤ 2-è¿è¡Œå‘½ä»¤
 *****************************************************************************************************/
 void DelAllOrder(void)
 {
    DWORD i,j;
-   for(i=0; i<8; i++) { //ÏûºÅ´¦Àí
-      for (j=0; i<MaxFloor[j]; j++) { //ÃğµÆ
+   for(i=0; i<8; i++) { //æ¶ˆå·å¤„ç†
+      for (j=0; i<MaxFloor[j]; j++) { //ç­ç¯
 		      if (BitFun(CanUpLed[i], j, 2)>0) { 
 			        BitFun(CanUpLed[j], j, 0);
 		          CanUpLedTimer[i][j] = 0;
