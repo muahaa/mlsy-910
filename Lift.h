@@ -1,41 +1,41 @@
 /*****************************************************************************
-  È«¾Ö±äÁ¿
+  å…¨å±€å˜é‡
 ******************************************************************************/
 #ifndef __LIFT_H 
 #define __LIFT_H
 /*****************************************************************************/
 #ifdef Lift_Ex
-   #define Extern_Lift         //¶¨Òå±äÁ¿
+   #define Extern_Lift         //å®šä¹‰å˜é‡
 #else
-   #define Extern_Lift extern  //ÉùÃ÷±äÁ¿
+   #define Extern_Lift extern  //å£°æ˜å˜é‡
 #endif
 #include "absacc.h"
 /*****************************************************************************/
-#define RunNoOrder         (1ul<<0)  //µ÷ÓÃÎŞºôÌİÎ¢»ú
-#define RunOneInOrder      (1ul<<1)  //µ÷ÓÃÒ»¸öÄÚÑ¡Î¢»ú
-#define BackMode1      	   (1ul<<2)  //ÔÚÊ±¼ä¶Î¹¦ÄÜÊ±,·ÇÉè¶¨Ê±¼äÍâ²ÉÓÃ·ÖÉ¢´ıÌİ	
-#define BackNotDelInOrder	 (1ul<<3)  //ÔÚ´ıÌİ»Ø»ùÕ¾Ê±ÓĞÍâºô£¬²»È¡ÏûÄÚÑ¡
-#define LiftErrorDeal   	 (1ul<<4)  //ÓĞÖ¸Áî¸øÎ¢»ú£¬µ«Î¢»úÎŞ·½Ïò£¬ÍËÀë²¢ÇÒ·¢ÄÚÑ¡
-#define DisableOrderFun    (1ul<<5)  //Ôö¼ÓµçÄÔ½ûÖ¹ºô¹¦ÄÜ
-#define MainSubEn          (1ul<<6)  //Ö÷¸±Èº¿Ø°åÊ¹ÄÜ(V5.0°æ±¾ÓÃ)
-#define SubFlag            (1ul<<7)  //¸±Èº¿Ø°å(V5.0°æ±¾ÓÃ)
-#define RunNoOrderTimeCtrl (1ul<<8)  //µ÷ÓÃÎŞºôÌİÎ¢»ú(²¢¿¼ÂÇÊ±¼ä)
-#define ScanOrderEn100ms   (1ul<<9)  //ÓÃ²Ëµ¥·½Ê½100ms²éÑ¯µÇ¼ÇÖ¸Áî	 
-#define ScanOrderEn1S      (1ul<<10) //ÓÃ²Ëµ¥·½Ê½1s²éÑ¯µÇ¼ÇÖ¸Áî	 
-#define FloorSendEn1S      (1ul<<11) //µçÌİÍ£Ö¹Ê±£¬1Ãë¼ä¸ô·¢ËÍ±¾²ãµÇ¼ÇÖ¸Áî	 
-#define DelAllFunction     (1ul<<12) //°ÄÃÅ²ÉÓÃÏûºÅ°´°´Å¥Ê¹ÄÜ´¦Àí	 
+#define RunNoOrder         (1ul<<0)  //è°ƒç”¨æ— å‘¼æ¢¯å¾®æœº
+#define RunOneInOrder      (1ul<<1)  //è°ƒç”¨ä¸€ä¸ªå†…é€‰å¾®æœº
+#define BackMode1      	   (1ul<<2)  //åœ¨æ—¶é—´æ®µåŠŸèƒ½æ—¶,éè®¾å®šæ—¶é—´å¤–é‡‡ç”¨åˆ†æ•£å¾…æ¢¯	
+#define BackNotDelInOrder	 (1ul<<3)  //åœ¨å¾…æ¢¯å›åŸºç«™æ—¶æœ‰å¤–å‘¼ï¼Œä¸å–æ¶ˆå†…é€‰
+#define LiftErrorDeal   	 (1ul<<4)  //æœ‰æŒ‡ä»¤ç»™å¾®æœºï¼Œä½†å¾®æœºæ— æ–¹å‘ï¼Œé€€ç¦»å¹¶ä¸”å‘å†…é€‰
+#define DisableOrderFun    (1ul<<5)  //å¢åŠ ç”µè„‘ç¦æ­¢å‘¼åŠŸèƒ½
+#define MainSubEn          (1ul<<6)  //ä¸»å‰¯ç¾¤æ§æ¿ä½¿èƒ½(V5.0ç‰ˆæœ¬ç”¨)
+#define SubFlag            (1ul<<7)  //å‰¯ç¾¤æ§æ¿(V5.0ç‰ˆæœ¬ç”¨)
+#define RunNoOrderTimeCtrl (1ul<<8)  //è°ƒç”¨æ— å‘¼æ¢¯å¾®æœº(å¹¶è€ƒè™‘æ—¶é—´)
+#define ScanOrderEn100ms   (1ul<<9)  //ç”¨èœå•æ–¹å¼100msæŸ¥è¯¢ç™»è®°æŒ‡ä»¤	 
+#define ScanOrderEn1S      (1ul<<10) //ç”¨èœå•æ–¹å¼1sæŸ¥è¯¢ç™»è®°æŒ‡ä»¤	 
+#define FloorSendEn1S      (1ul<<11) //ç”µæ¢¯åœæ­¢æ—¶ï¼Œ1ç§’é—´éš”å‘é€æœ¬å±‚ç™»è®°æŒ‡ä»¤	 
+#define DelAllFunction     (1ul<<12) //æ¾³é—¨é‡‡ç”¨æ¶ˆå·æŒ‰æŒ‰é’®ä½¿èƒ½å¤„ç†	 
 	
-#define StdLedSendFun      (1ul<<23) //±ê×¼Ä£Ê½ÏÂ£¬µÆ¿ØÖÆ²ÉÓÃÈº·¢
-#define WaitData           (1ul<<24) //·ÖÉ¢´ıÌİÖ»ÓĞ8Ì¨µÄ×éÊı¾İÓĞĞ§
-#define TimeSpecial        (1ul<<25) //¸ß·åÆÚ×¨ÓÃ¹¦ÄÜ
-#define PowerFunNoGroup	   (1ul<<26) //·¢µç»úÎŞÈº¿Ø¹¦ÄÜ
-#define PowerFun           (1ul<<27) //·¢µç»ú¹¦ÄÜ	 
-#define TaiWangFun         (1ul<<28) //Ì¨Íå²Ğ¼²ÈËÍâºô×¨ÓÃ
-#define StdFun             (1ul<<29) //±ê×¼Èº¿Ø±êÖ¾
-#define WaitSpecial        (1ul<<30) //·ÖÉ¢´ıÌİ
-#define RunSpecial         (1ul<<31) //ÌØÊâ¹¦ÄÜ´¦Àí
+#define StdLedSendFun      (1ul<<23) //æ ‡å‡†æ¨¡å¼ä¸‹ï¼Œç¯æ§åˆ¶é‡‡ç”¨ç¾¤å‘
+#define WaitData           (1ul<<24) //åˆ†æ•£å¾…æ¢¯åªæœ‰8å°çš„ç»„æ•°æ®æœ‰æ•ˆ
+#define TimeSpecial        (1ul<<25) //é«˜å³°æœŸä¸“ç”¨åŠŸèƒ½
+#define PowerFunNoGroup	   (1ul<<26) //å‘ç”µæœºæ— ç¾¤æ§åŠŸèƒ½
+#define PowerFun           (1ul<<27) //å‘ç”µæœºåŠŸèƒ½	 
+#define TaiWangFun         (1ul<<28) //å°æ¹¾æ®‹ç–¾äººå¤–å‘¼ä¸“ç”¨
+#define StdFun             (1ul<<29) //æ ‡å‡†ç¾¤æ§æ ‡å¿—
+#define WaitSpecial        (1ul<<30) //åˆ†æ•£å¾…æ¢¯
+#define RunSpecial         (1ul<<31) //ç‰¹æ®ŠåŠŸèƒ½å¤„ç†
 	 
-//²Ëµ¥±äÁ¿
+//èœå•å˜é‡
 //A
 typedef struct LIFT_FUNCCODE_STRUCT
 { 
@@ -44,43 +44,43 @@ typedef struct LIFT_FUNCCODE_STRUCT
    DWORD setAddr[8];
    DWORD firstFloor[8];
    DWORD maxFloor[8];
-   DWORD enUpOrder[8][2];  //8Ì¨ÌİAÃÅºôÌİÊ¹ÄÜ
+   DWORD enUpOrder[8][2];  //8å°æ¢¯Aé—¨å‘¼æ¢¯ä½¿èƒ½
    DWORD enDnOrder[8][2];
-   DWORD enUpOrderB[8][2]; //8Ì¨ÌİBÃÅºôÌİÊ¹ÄÜ
+   DWORD enUpOrderB[8][2]; //8å°æ¢¯Bé—¨å‘¼æ¢¯ä½¿èƒ½
    DWORD enDnOrderB[8][2];
    DWORD newFlag[8];
    DWORD liftNotMove;
    DWORD waitFloorTime[6];
 	 DWORD waitStartTime[6];
 	 DWORD waitEndTime[6];
-   BYTE  waitFloor[8][8]; //6¸öºîÌİÂ¥²ã
+   BYTE  waitFloor[8][8]; //6ä¸ªä¾¯æ¢¯æ¥¼å±‚
    DWORD groupFirstFloor;
    DWORD groupMaxFloor;
 
-   DWORD enUpLift[8][8][2]; //8×éµçÌİµÇ¼ÇÊ¹ÄÜ±êÖ¾
-   DWORD enDnLift[8][8][2]; //8×éµçÌİµÇ¼ÇÊ¹ÄÜ±êÖ¾
-   DWORD enUpGroup[8][8][2];//8×éµçÌİµ÷¶ÈÊ¹ÄÜ±êÖ¾
-   DWORD enDnGroup[8][8][2];//8×éµçÌİµ÷¶ÈÊ¹ÄÜ±êÖ¾
+   DWORD enUpLift[8][8][2]; //8ç»„ç”µæ¢¯ç™»è®°ä½¿èƒ½æ ‡å¿—
+   DWORD enDnLift[8][8][2]; //8ç»„ç”µæ¢¯ç™»è®°ä½¿èƒ½æ ‡å¿—
+   DWORD enUpGroup[8][8][2];//8ç»„ç”µæ¢¯è°ƒåº¦ä½¿èƒ½æ ‡å¿—
+   DWORD enDnGroup[8][8][2];//8ç»„ç”µæ¢¯è°ƒåº¦ä½¿èƒ½æ ‡å¿—
 
-   BYTE  waitFloor8[8]; //8¸öºîÌİÂ¥²ã
-   BYTE  waitFloor7[8]; //7¸öºîÌİÂ¥²ã
-   BYTE  waitFloor6[8]; //6¸öºîÌİÂ¥²ã
-   BYTE  waitFloor5[8]; //5¸öºîÌİÂ¥²ã
-   BYTE  waitFloor4[4]; //4¸öºîÌİÂ¥²ã
-   BYTE  waitFloor3[4]; //3¸öºîÌİÂ¥²ã
-   BYTE  waitFloor2[4]; //2¸öºîÌİÂ¥²ã
+   BYTE  waitFloor8[8]; //8ä¸ªä¾¯æ¢¯æ¥¼å±‚
+   BYTE  waitFloor7[8]; //7ä¸ªä¾¯æ¢¯æ¥¼å±‚
+   BYTE  waitFloor6[8]; //6ä¸ªä¾¯æ¢¯æ¥¼å±‚
+   BYTE  waitFloor5[8]; //5ä¸ªä¾¯æ¢¯æ¥¼å±‚
+   BYTE  waitFloor4[4]; //4ä¸ªä¾¯æ¢¯æ¥¼å±‚
+   BYTE  waitFloor3[4]; //3ä¸ªä¾¯æ¢¯æ¥¼å±‚
+   BYTE  waitFloor2[4]; //2ä¸ªä¾¯æ¢¯æ¥¼å±‚
 
-   BYTE  powerSetp[8]; //Í£µçË³Ğò
-   BYTE  fireSetp[8];  //Ïû·ÀË³Ğò
-   DWORD mode2_WaitFloorTime;  //·ÖÉ¢´ıÌİµÈ´ıÊ±¼ä
+   BYTE  powerSetp[8]; //åœç”µé¡ºåº
+   BYTE  fireSetp[8];  //æ¶ˆé˜²é¡ºåº
+   DWORD mode2_WaitFloorTime;  //åˆ†æ•£å¾…æ¢¯ç­‰å¾…æ—¶é—´
 	 
-	 DWORD enableOrderTime[8][8];     //8Ì¨ÌİÊ±¼ä¶ÎÉèÖÃ
-	 DWORD enableOrderFlag[8][8][2];  //8Ì¨Ìİ8¸öÊ±¼ä¶ÎµÄ½ûºôÉèÖÃ
+	 DWORD enableOrderTime[8][8];     //8å°æ¢¯æ—¶é—´æ®µè®¾ç½®
+	 DWORD enableOrderFlag[8][8][2];  //8å°æ¢¯8ä¸ªæ—¶é—´æ®µçš„ç¦å‘¼è®¾ç½®
 	
-	 DWORD floorRunTime;  //µçÌİµ¥²ãÔËĞĞÊ±¼ä
-	 DWORD runStopTime;   //µçÌİÍ£¿¿Ê±¼ä	
-	 DWORD runOrderTime;  //µçÌİµÇ¼ÇÓÅÏÈÊ±¼ä	
-//	 BYTE  groupAddress;  //Èº¿Ø°åµØÖ·
+	 DWORD floorRunTime;  //ç”µæ¢¯å•å±‚è¿è¡Œæ—¶é—´
+	 DWORD runStopTime;   //ç”µæ¢¯åœé æ—¶é—´	
+	 DWORD runOrderTime;  //ç”µæ¢¯ç™»è®°ä¼˜å…ˆæ—¶é—´	
+//	 BYTE  groupAddress;  //ç¾¤æ§æ¿åœ°å€
 } LIFT_FUNCCODE;	 
 Extern_Lift LIFT_FUNCCODE  LP;
 
@@ -122,58 +122,58 @@ Extern_Lift LIFT_FUNCCODE  LP;
 #define OrderTimeEnable      (LP.enableOrderTime)
 #define OrderFlagEnable      (LP.enableOrderFlag)
 
-#define FloorRunTime      (LP.floorRunTime)  //µçÌİµ¥²ãÔËĞĞÊ±¼ä
-#define RunStopTime       (LP.runStopTime)   //µçÌİÍ£¿¿Ê±¼ä	
-#define RunOrderTime      (LP.runOrderTime)  //µçÌİµÇ¼ÇÓÅÏÈÊ±¼ä	
+#define FloorRunTime      (LP.floorRunTime)  //ç”µæ¢¯å•å±‚è¿è¡Œæ—¶é—´
+#define RunStopTime       (LP.runStopTime)   //ç”µæ¢¯åœé æ—¶é—´	
+#define RunOrderTime      (LP.runOrderTime)  //ç”µæ¢¯ç™»è®°ä¼˜å…ˆæ—¶é—´	
 
-//ÎŞĞè±£´æ
-Extern_Lift DWORD LiftWaitTimer[8];//µÈ´ıÊ±¼ä
-Extern_Lift DWORD LiftWaitFlag;    //»Ø»ùÕ¾±êÖ¾
+//æ— éœ€ä¿å­˜
+Extern_Lift DWORD LiftWaitTimer[8];//ç­‰å¾…æ—¶é—´
+Extern_Lift DWORD LiftWaitFlag;    //å›åŸºç«™æ ‡å¿—
 Extern_Lift DWORD LiftNotMoveTimer[8];
 Extern_Lift DWORD LiftOnline[8];
 Extern_Lift DWORD LiftNowFloor[8];
 Extern_Lift DWORD LiftABSFloor[8];
-Extern_Lift DWORD LiftUpOrder[8][2];  //µçÌİµÄµÇ¼Ç±êÖ¾
+Extern_Lift DWORD LiftUpOrder[8][2];  //ç”µæ¢¯çš„ç™»è®°æ ‡å¿—
 Extern_Lift DWORD LiftDnOrder[8][2];
 Extern_Lift DWORD LiftInOrder[8][2];
-//Extern_Lift DWORD LiftUpOrderB[8][2]; //µçÌİBÃÅµÄµÇ¼Ç±êÖ¾
+//Extern_Lift DWORD LiftUpOrderB[8][2]; //ç”µæ¢¯Bé—¨çš„ç™»è®°æ ‡å¿—
 //Extern_Lift DWORD LiftDnOrderB[8][2];
 //Extern_Lift DWORD LiftInOrderB[8][2];
 Extern_Lift DWORD LiftState[8];
 Extern_Lift DWORD LiftRunFloor[8];
 Extern_Lift DWORD LiftEnDecFloor[8];
 
-Extern_Lift DWORD RunEnUpOrder[8][2]; //8Ì¨ÌİAÃÅºôÌİÊ¹ÄÜÔËĞĞÊ±Ê¹ÓÃ
+Extern_Lift DWORD RunEnUpOrder[8][2]; //8å°æ¢¯Aé—¨å‘¼æ¢¯ä½¿èƒ½è¿è¡Œæ—¶ä½¿ç”¨
 Extern_Lift DWORD RunEnDnOrder[8][2];
-//Extern_Lift DWORD RunEnUpOrderB[8][2]; //8Ì¨ÌİBÃÅºôÌİÊ¹ÄÜÔËĞĞÊ±Ê¹ÓÃ
+//Extern_Lift DWORD RunEnUpOrderB[8][2]; //8å°æ¢¯Bé—¨å‘¼æ¢¯ä½¿èƒ½è¿è¡Œæ—¶ä½¿ç”¨
 //Extern_Lift DWORD RunEnDnOrderB[8][2];
 
-//¿ÕÎ»ÖÃ
-Extern_Lift DWORD GroupUpOrder[8][2], CanUpLed[8][2];//8×éÈº¿ØµÄºôÌİ±êÖ¾
+//ç©ºä½ç½®
+Extern_Lift DWORD GroupUpOrder[8][2], CanUpLed[8][2];//8ç»„ç¾¤æ§çš„å‘¼æ¢¯æ ‡å¿—
 Extern_Lift DWORD GroupDnOrder[8][2], CanDnLed[8][2];
-Extern_Lift DWORD UpOrder[8][2], UpOrderTemp[8][2], DoUpOrder[8][2], DoUpOrderOld[8][2]; //µçÌİµÄ¿ØÖÆ±êÖ¾
+Extern_Lift DWORD UpOrder[8][2], UpOrderTemp[8][2], DoUpOrder[8][2], DoUpOrderOld[8][2]; //ç”µæ¢¯çš„æ§åˆ¶æ ‡å¿—
 Extern_Lift DWORD DnOrder[8][2], DnOrderTemp[8][2], DoDnOrder[8][2], DoDnOrderOld[8][2];
-//Extern_Lift DWORD UpOrderSp[8][2], DnOrderSp[8][2];//×¨ÓÃ
+//Extern_Lift DWORD UpOrderSp[8][2], DnOrderSp[8][2];//ä¸“ç”¨
 
-//Extern_Lift DWORD GroupUpOrderB[8][2], CanUpLedB[8][2]; //8×éÈº¿ØµÄºôÌİ±êÖ¾
+//Extern_Lift DWORD GroupUpOrderB[8][2], CanUpLedB[8][2]; //8ç»„ç¾¤æ§çš„å‘¼æ¢¯æ ‡å¿—
 //Extern_Lift DWORD GroupDnOrderB[8][2], CanDnLedB[8][2];
-//Extern_Lift DWORD UpOrderB[8][2], UpOrderTempB[8][2], DoUpOrderB[8][2], DoUpOrderOldB[8][2]; //µçÌİµÄ¿ØÖÆ±êÖ¾
+//Extern_Lift DWORD UpOrderB[8][2], UpOrderTempB[8][2], DoUpOrderB[8][2], DoUpOrderOldB[8][2]; //ç”µæ¢¯çš„æ§åˆ¶æ ‡å¿—
 //Extern_Lift DWORD DnOrderB[8][2], DnOrderTempB[8][2], DoDnOrderB[8][2], DoDnOrderOldB[8][2];
-//Extern_Lift DWORD UpOrderSpB[8][2], DnOrderSpB[8][2]; //×¨ÓÃ
+//Extern_Lift DWORD UpOrderSpB[8][2], DnOrderSpB[8][2]; //ä¸“ç”¨
 
-Extern_Lift BYTE CanUpLedTimer[8][72]; //·¢ËÍ´ÎÊı
-Extern_Lift BYTE CanDnLedTimer[8][72]; //·¢ËÍ´ÎÊı
-//Extern_Lift BYTE CanUpLedBTimer[8][72];//·¢ËÍ´ÎÊı
-//Extern_Lift BYTE CanDnLedBTimer[8][72];//·¢ËÍ´ÎÊı
+Extern_Lift BYTE CanUpLedTimer[8][72]; //å‘é€æ¬¡æ•°
+Extern_Lift BYTE CanDnLedTimer[8][72]; //å‘é€æ¬¡æ•°
+//Extern_Lift BYTE CanUpLedBTimer[8][72];//å‘é€æ¬¡æ•°
+//Extern_Lift BYTE CanDnLedBTimer[8][72];//å‘é€æ¬¡æ•°
 
-//µçÌİ±¾²ãºôÌİ±êÖ¾£¨ÓÃÓÚÈ·¶¨Í¬Ò»Â¥²ã±»°´°´Å¥µÄµçÌİÓÅÏÈ£©
+//ç”µæ¢¯æœ¬å±‚å‘¼æ¢¯æ ‡å¿—ï¼ˆç”¨äºç¡®å®šåŒä¸€æ¥¼å±‚è¢«æŒ‰æŒ‰é’®çš„ç”µæ¢¯ä¼˜å…ˆï¼‰
 //Extern_Lift DWORD LiftUpButton[8][2];
 //Extern_Lift DWORD LiftDnButton[8][2];
 //Extern_Lift DWORD LiftUpButtonB[8][2];
 //Extern_Lift DWORD LiftDnButtonB[8][2];
 
-//µ½Õ¾ÏûºÅÊ±°Ñ¸ÃµçÌİ±ê¼ÇÒ»ÏÂ£¬ÓÃÓÚ±£³Ö×î¸ß×îµÍÂ¥²ãÔËËãµÄÕıÈ·
-//µ±µçÌİµÄ×´Ì¬´ÓÍ£Ö¹µ½Æô¶¯×ª±ä£¬»òÎŞ·½ÏòĞÅºÅÊ±£¬Çå³ı±ê¼Ç
+//åˆ°ç«™æ¶ˆå·æ—¶æŠŠè¯¥ç”µæ¢¯æ ‡è®°ä¸€ä¸‹ï¼Œç”¨äºä¿æŒæœ€é«˜æœ€ä½æ¥¼å±‚è¿ç®—çš„æ­£ç¡®
+//å½“ç”µæ¢¯çš„çŠ¶æ€ä»åœæ­¢åˆ°å¯åŠ¨è½¬å˜ï¼Œæˆ–æ— æ–¹å‘ä¿¡å·æ—¶ï¼Œæ¸…é™¤æ ‡è®°
 //Extern_Lift DWORD LiftGetUp[8][2];
 //Extern_Lift DWORD LiftGetDn[8][2];
 //Extern_Lift DWORD LiftGetUpB[8][2];
@@ -186,24 +186,25 @@ Extern_Lift volatile DWORD CIn[8];
 Extern_Lift volatile DWORD C[8];
 Extern_Lift volatile DWORD N[8];
 
-Extern_Lift volatile DWORD FNum;  //Â¥²ã¾àÀë
-Extern_Lift volatile DWORD FTime; //Â¥²ãÊ±¼ä
+Extern_Lift volatile DWORD FNum;  //æ¥¼å±‚è·ç¦»
+Extern_Lift volatile DWORD FTime; //æ¥¼å±‚æ—¶é—´
 
-Extern_Lift volatile DWORD CNum;  //×ÜºôµÇ¼ÇÊıÄ¿
-Extern_Lift volatile DWORD ONum;  //ÍâºôµÇ¼ÇÊıÄ¿
-Extern_Lift volatile DWORD INum;  //ÄÚÑ¡µÇ¼ÇÊıÄ¿
-Extern_Lift volatile DWORD Do_Floor; //ÕıÔÚ´¦ÀíµÄÂ¥²ã
-Extern_Lift volatile DWORD Max; //×î´óÂ¥²ã
-Extern_Lift volatile DWORD Min; //×îĞ¡Â¥²ã
-Extern_Lift volatile DWORD BaseFloorGroup; //»Ø»ùÕ¾ÔËĞĞ×´Ì¬
-Extern_Lift volatile DWORD IncallNum[8];   //ÄÚÑ¡ÊıÄ¿
-Extern_Lift volatile DWORD BackFloor[8];   //»ØµÈ´ıÂ¥²ã
+Extern_Lift volatile DWORD CNum;  //æ€»å‘¼ç™»è®°æ•°ç›®
+Extern_Lift volatile DWORD ONum;  //å¤–å‘¼ç™»è®°æ•°ç›®
+Extern_Lift volatile DWORD INum;  //å†…é€‰ç™»è®°æ•°ç›®
+void CheckNoOrderIndividual(void);
+Extern_Lift volatile DWORD Do_Floor; //æ­£åœ¨å¤„ç†çš„æ¥¼å±‚
+Extern_Lift volatile DWORD Max; //æœ€å¤§æ¥¼å±‚
+Extern_Lift volatile DWORD Min; //æœ€å°æ¥¼å±‚
+Extern_Lift volatile DWORD BaseFloorGroup; //å›åŸºç«™è¿è¡ŒçŠ¶æ€
+Extern_Lift volatile DWORD IncallNum[8];   //å†…é€‰æ•°ç›®
+Extern_Lift volatile DWORD BackFloor[8];   //å›ç­‰å¾…æ¥¼å±‚
 
-Extern_Lift volatile DWORD PowerFlag[8];   //¶ÏµçÊı¾İ±êÖ¾
-Extern_Lift volatile DWORD PowerRunSetp;   //¶Ïµç´¦Àí²½Öè
+Extern_Lift volatile DWORD PowerFlag[8];   //æ–­ç”µæ•°æ®æ ‡å¿—
+Extern_Lift volatile DWORD PowerRunSetp;   //æ–­ç”µå¤„ç†æ­¥éª¤
 
-Extern_Lift volatile DWORD NoOrderTimer;   //ÎŞºôÌİ¶¨Ê±Æ÷
-Extern_Lift volatile DWORD StartupTime;    //Æô¶¯Ê±¼ä
+Extern_Lift volatile DWORD NoOrderTimer;   //æ— å‘¼æ¢¯å®šæ—¶å™¨
+Extern_Lift volatile DWORD StartupTime;    //å¯åŠ¨æ—¶é—´
 /*****************************************************************************/
 /*****************************************************************************/
 DWORD BitFun(DWORD *p, DWORD i, DWORD Value);
